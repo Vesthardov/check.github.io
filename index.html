@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN & Proxy Advanced Checker</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-color: #c9d1d9;
+            --accent-color: #58a6ff;
+            --success-color: #238636;
+            --warning-color: #d29922;
+            --danger-color: #f85149;
+            --border-color: #30363d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+        }
+
+        .info-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 16px;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 2em;
+            color: #fff;
+        }
+
+        .badge-success { background-color: var(--success-color); }
+        .badge-warning { background-color: var(--warning-color); }
+        .badge-danger { background-color: var(--danger-color); }
+        .badge-info { background-color: var(--accent-color); }
+
+        .btn {
+            background-color: #21262d;
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #30363d;
+            border-color: #8b949e;
+        }
+
+        .loader {
+            color: var(--accent-color);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>VPN / Proxy Analyzer</h1>
+        <div class="subtitle">Анализ безопасности соединения в реальном времени</div>
+    </header>
+
+    <!-- БЛОК 1: Сетевой IP-адрес -->
+    <div class="card">
+        <div class="card-title">Основной IP & Провайдер</div>
+        <div class="grid">
+            <div class="info-block">
+                <span class="label">Ваш текущий IP</span>
+                <span class="value" id="ip-val"><span class="loader">Определяем...</span></span>
+            </div>
+            <div class="info-block">
+                <span class="label">Страна / Город</span>
+                <span class="value" id="geo-val">-</span>
+            </div>
+            <div class="info-block">
+                <span class="label">Провайдер (ISP)</span>
+                <span class="value" id="isp-val">-</span>
+            </div>
+            <div class="info-block">
+                <span class="label">Тип Сети (Хостинг/Владелец)</span>
+                <span class="value" id="org-val">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- БЛОК 2: Анализ Туннеля -->
+    <div class="card">
+        <div class="card-title">Анализ утечек и типа VPN</div>
+        <div class="grid">
+            <div class="info-block">
+                <span class="label">Статус VPN / Proxy</span>
+                <span class="value" id="vpn-status">-</span>
+            </div>
+            <div class="info-block">
+                <span class="label">Утечка через WebRTC</span>
+                <span class="value" id="webrtc-status"><span class="loader">Тестируем...</span></span>
+            </div>
+            <div class="info-block">
+                <span class="label">Предполагаемый режим</span>
+                <span class="value" id="tunnel-mode-val">-</span>
+            </div>
+            <div class="info-block">
+                <span class="label">Разница во времени</span>
+                <span class="value" id="time-leak-val">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- БЛОК 3: Тест задержки -->
+    <div class="card">
+        <div class="card-title">Качество соединения</div>
+        <div class="grid">
+            <div class="info-block">
+                <span class="label">Задержка сети (Ping)</span>
+                <span class="value" id="ping-val"><span class="loader">Замер...</span></span>
+            </div>
+        </div>
+    </div>
+    <button class="btn" onclick="runAnalysis()">Перезапустить тест</button>
+</div>
+<script>
+    // База ключевых слов хостингов и VPS, где обычно разворачивают Xray/Sing-box
+    const vpnKeywords = ['hosting', 'vps', 'cloud', 'server', 'digitalocean', 'hetzner', 'ovh', 'linode', 'vscale', 'amazon', 'google', 'microsoft', 'm247', 'leaseweb', 'scaleway', 'itldc'];
+
+    // Запрос данных о геопозиции и провайдере по IP
+    async function fetchIPData() {
+        try {
+            const response = await fetch('https://ipapi.co');
+            if (!response.ok) throw new Error('Ошибка основного API');
+            return await response.json();
+        } catch (e) {
+            // Резервный канал на случай сбоя основного API
+            try {
+                const resBackup = await fetch('https://ip-api.com');
+                const data = await resBackup.json();
+                return {
+                    ip: data.query,
+                    country_name: data.country,
+                    city: data.city,
+                    org: data.org,
+                    asn: data.as,
+                    timezone: data.timezone
+                };
+            } catch (err) {
+                return null;
+            }
+        }
+    }
+
+    // Проверка утечки реального IP через протокол WebRTC
+    function checkWebRTC() {
+        return new Promise((resolve) => {
+            const rtc = new RTCPeerConnection({iceServers: [{urls: 'stun:://google.com'}]});
+            rtc.createDataChannel('');
+            rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
+            
+            let detectedIPs = [];
+            rtc.onicecandidate = (ice) => {
+                if (!ice || !ice.candidate || !ice.candidate.candidate) {
+                    resolve(detectedIPs);
+                    return;
+                }
+                const parts = ice.candidate.candidate.split(' ');
+                const ip = parts[4];
+                if (ip && !detectedIPs.includes(ip)) {
+                    detectedIPs.push(ip);
+                }
+            };
+            setTimeout(() => resolve(detectedIPs), 1500);
+        });
+    }
+
+    // Измерение задержки сети (Пинг)
+    async function measurePing() {
+        const start = performance.now();
+        try {
+            await fetch('https://github.com', { method: 'HEAD', cache: 'no-store' });
+            return Math.round(performance.now() - start);
+        } catch (e) {
+            return 'Ошибка замера';
+        }
+    }
+
+    // Главная функция анализа соединения
+    async function runAnalysis() {
+        // Установка начальных статусов загрузки
+        document.getElementById('ip-val').innerHTML = '<span class="loader">Определяем...</span>';
+        document.getElementById('webrtc-status').innerHTML = '<span class="loader">Тестируем...</span>';
+        document.getElementById('ping-val').innerHTML = '<span class="loader">Замер...</span>';
+        document.getElementById('geo-val').innerText = '-';
+        document.getElementById('isp-val').innerText = '-';
+        document.getElementById('org-val').innerText = '-';
+        document.getElementById('vpn-status').innerText = '-';
+        document.getElementById('tunnel-mode-val').innerText = '-';
+        document.getElementById('time-leak-val').innerText = '-';
+
+        // 1. Тестируем пинг
+        const ping = await measurePing();
+        document.getElementById('ping-val').innerText = typeof ping === 'number' ? `${ping} мс` : ping;
+
+        // 2. Получаем сетевые данные
+        const geoData = await fetchIPData();
+        
+        if (geoData) {
+            document.getElementById('ip-val').innerText = geoData.ip;
+            document.getElementById('geo-val').innerText = `${geoData.country_name || 'Неизвестно'}, ${geoData.city || ''}`;
+            document.getElementById('isp-val').innerText = geoData.org || geoData.asn || 'Неизвестно';
+            document.getElementById('org-val').innerText = geoData.asn || 'Частный диапазон';
+
+            // Проверка: относится ли IP к дата-центрам (VPN)
+            const providerText = ((geoData.org || '') + ' ' + (geoData.asn || '')).toLowerCase();
+            let isVpnByProvider = vpnKeywords.some(keyword => providerText.includes(keyword));
+
+            if (isVpnByProvider) {
+                document.getElementById('vpn-status').innerHTML = '<span class="badge badge-warning">Обнаружен VPN / Сервер</span>';
+            } else {
+                document.getElementById('vpn-status').innerHTML = '<span class="badge badge-success">Чистый IP (Домашний)</span>';
+            }
+
+            // Корректная проверка несовпадения таймзон (исправленная версия со скриншота)
+            if (geoData.timezone) {
+                try {
+                    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (localTimezone.toLowerCase() !== geoData.timezone.toLowerCase()) {
+                        document.getElementById('time-leak-val').innerHTML = `<span class="badge badge-danger">Утечка времени</span><br><small>Браузер: ${localTimezone}, IP: ${geoData.timezone}</small>`;
+                    } else {
+                        document.getElementById('time-leak-val').innerHTML = '<span class="badge badge-success">Совпадает</span>';
+                    }
+                } catch(e) {
+                    document.getElementById('time-leak-val').innerText = 'Не удалось сверить';
+                }
+            }
+        } else {
+            document.getElementById('ip-val').innerText = 'Ошибка получения данных';
+        }
+
+        // 3. Анализ утечек WebRTC и определение типа туннеля (Proxy / TUN)
+        const localIPs = await checkWebRTC();
+        
+        if (localIPs.length === 0) {
+            document.getElementById('webrtc-status').innerHTML = '<span class="badge badge-info">WebRTC Заблокирован</span>';
+            document.getElementById('tunnel-mode-val').innerText = 'Защищенный (Скрытый)';
+        } else {
+            document.getElementById('webrtc-status').innerHTML = `<span class="badge badge-success">Активен</span><br><small>Интерфейсы: ${localIPs.slice(0, 2).join(', ')}</small>`;
+            
+            // Если в списке WebRTC есть внешний IP, отличающийся от VPN-IP, значит системный прокси пробит
+            const hasExternalLeak = localIPs.some(ip => !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.') && !ip.startsWith('127.') && !ip.includes('local') && ip !== geoData?.ip);
+            
+            if (hasExternalLeak) {
+                document.getElementById('tunnel-mode-val').innerHTML = '<span class="badge badge-danger">Обычный Proxy / Сбой туннеля</span><br><small>Виден реальный IP в обход прокси</small>';
+            } else {
+                document.getElementById('tunnel-mode-val').innerHTML = '<span class="badge badge-success">Полный TUN Режим</span><br><small>Похоже на Sing-Box TUN / Happy Tun</small>';
+            }
+        }
+    }
+
+    // Автоматический старт при открытии страницы
+    window.onload = runAnalysis;
+</script>
+</body>
+</html>
