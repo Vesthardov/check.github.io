@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jerry's Game - Мобильная и ПК версия</title>
+    <title>Jerry's Game - Тестовая версия</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,6 +19,28 @@
             font-family: 'Arial', sans-serif;
             height: 100vh;
         }
+        
+        /* Кнопка переключения режимов для теста */
+        #test-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: #2d3436;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        #test-toggle:hover {
+            background: #1e2223;
+        }
+
         #ui {
             position: absolute;
             top: 20px;
@@ -53,14 +75,40 @@
             font-style: italic;
             min-height: 20px;
         }
+        
+        /* ШАРИК */
         .balloon {
             position: absolute;
             border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-            bottom: -120px;
+            bottom: -150px;
             animation: fly linear forwards;
-            /* Отключаем стандартные синие вспышки при тапе на смартфонах */
             -webkit-tap-highlight-color: transparent; 
         }
+        
+        /* Блик в стиле мультфильма Рик и Морти (полумесяц слева сверху) */
+        .balloon::before {
+            content: "";
+            position: absolute;
+            top: 12%;
+            left: 15%;
+            width: 30%;
+            height: 30%;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 50%;
+        }
+
+        /* Дополнительный маленький точечный блик для объема */
+        .balloon-dot {
+            position: absolute;
+            top: 35%;
+            left: 18%;
+            width: 10%;
+            height: 10%;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+        }
+        
+        /* Хвостик шарика */
         .balloon::after {
             content: "";
             position: absolute;
@@ -68,51 +116,64 @@
             left: calc(50% - 4px);
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-bottom: 8px solid rgba(0,0,0,0.15);
+            border-bottom: 8px solid rgba(0,0,0,0.2);
         }
+
+        /* АНИМАЦИЯ ПОЛЕТА (Замедленная) */
         @keyframes fly {
             0% {
-                bottom: -120px;
+                bottom: -150px;
                 transform: translateX(0);
             }
             50% {
-                transform: translateX(15px);
+                transform: translateX(20px);
             }
             100% {
                 bottom: 105vh;
-                transform: translateX(-15px);
+                transform: translateX(-20px);
+            }
+        }
+
+        /* ЧАСТИЦЫ ПРИ ЛОПАНИИ */
+        .pop-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: explode 0.4s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--dx), var(--dy)) scale(0);
+                opacity: 0;
             }
         }
     </style>
 </head>
 <body>
 
+    <button id="test-toggle" onclick="toggleDeviceMode()">Тест: ПК</button>
+
     <div id="ui">
         <div id="device-info">Определение устройства...</div>
         <p id="score">Шары: 0</p>
         <div id="comment">Загрузка...</div>
     </div>
-
     <script>
         let score = 0;
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         const scoreDisplay = document.getElementById('score');
         const commentDisplay = document.getElementById('comment');
         const deviceInfo = document.getElementById('device-info');
+        const toggleBtn = document.getElementById('test-toggle');
         
-        // 1. ОПРЕДЕЛЕНИЕ УСТРОЙСТВА
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Настройки в зависимости от платформы
-        const config = {
-            balloonWidth: isMobile ? 70 : 60,  // На смартфонах шарики чуть крупнее, чтобы легче попадать пальцем
-            balloonHeight: isMobile ? 88 : 75,
-            spawnSpeed: isMobile ? 700 : 850,  // На смартфонах шарики летят чуть чаще
-            inputEvent: isMobile ? 'touchstart' : 'mousedown' // Мобильный тач или клик мыши
-        };
-
-        // Выводим статус пользователю
-        deviceInfo.textContent = isMobile ? "Режим: Смартфон (Тач)" : "Режим: Компьютер (Мышь)";
-        commentDisplay.textContent = isMobile ? "Тапай по шарам!" : "Кликай по шарам!";
+        let config = {};
+        let spawnInterval = null;
 
         const colors = ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', '#a29bfe', '#fd79a8'];
         const jerryQuotes = [
@@ -125,46 +186,109 @@
             "Вау! Еще один!"
         ];
 
+        // Функция обновления конфигурации под текущий режим
+        function updateConfig() {
+            config = {
+                balloonWidth: isMobile ? 75 : 60,  
+                balloonHeight: isMobile ? 94 : 75,
+                minFlyTime: 5.5, 
+                maxFlyTime: 8.0, 
+                spawnSpeed: isMobile ? 1000 : 1200, 
+                inputEvent: isMobile ? 'touchstart' : 'mousedown'
+            };
+
+            // Обновляем текст интерфейса
+            deviceInfo.textContent = isMobile ? "Режим: Смартфон (Тач)" : "Режим: Компьютер (Мышь)";
+            toggleBtn.textContent = isMobile ? "Тест: Смартфон 📱" : "Тест: ПК 💻";
+            commentDisplay.textContent = isMobile ? "Тапай по шарам!" : "Кликай по шарам!";
+
+            // Перезапускаем спавнер шаров с новыми таймингами
+            clearInterval(spawnInterval);
+            spawnInterval = setInterval(createBalloon, config.spawnSpeed);
+        }
+
+        // Переключатель режимов для теста
+        function toggleDeviceMode() {
+            isMobile = !isMobile;
+            updateConfig();
+        }
+
         function playPopSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(420, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(450, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.08);
                 gain.gain.setValueAtTime(0.2, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start();
                 osc.stop(ctx.currentTime + 0.08);
-            } catch(e) { console.log("Звук заблокирован до первого тапа"); }
+            } catch(e) { console.log("Звук заблокирован"); }
+        }
+
+        // Создание эффекта лопания (кусочки разлетаются в стороны)
+        function createPopAnimation(x, y, color) {
+            const particleCount = 8;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('pop-particle');
+                particle.style.backgroundColor = color;
+                
+                const size = Math.random() * 8 + 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                const angle = (i / particleCount) * Math.PI * 2 + (Math.random() * 0.5);
+                const distance = Math.random() * 50 + 30;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--dx', `${dx}px`);
+                particle.style.setProperty('--dy', `${dy}px`);
+                
+                document.body.appendChild(particle);
+                
+                particle.addEventListener('animationend', () => particle.remove());
+            }
         }
 
         function createBalloon() {
             const balloon = document.createElement('div');
             balloon.classList.add('balloon');
             
+            const dot = document.createElement('div');
+            dot.classList.add('balloon-dot');
+            balloon.appendChild(dot);
+            
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             const randomX = Math.random() * (window.innerWidth - config.balloonWidth);
-            const randomDuration = Math.random() * 3 + 3; // 3-6 секунд
+            const randomDuration = Math.random() * (config.maxFlyTime - config.minFlyTime) + config.minFlyTime;
             
-            // Динамические размеры из конфига устройства
             balloon.style.width = `${config.balloonWidth}px`;
             balloon.style.height = `${config.balloonHeight}px`;
             balloon.style.backgroundColor = randomColor;
             balloon.style.left = `${randomX}px`;
             balloon.style.animationDuration = `${randomDuration}s`;
-            balloon.style.boxShadow = `inset -7px -7px 0px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.15)`;
+            balloon.style.boxShadow = `inset -8px -8px 0px rgba(0,0,0,0.12), 0 5px 12px rgba(0,0,0,0.15)`;
             
-            // Обработка лопания по правильному событию (touchstart или mousedown)
             balloon.addEventListener(config.inputEvent, (e) => {
-                // Предотвращаем ложные двойные срабатывания на мобильных
                 e.preventDefault(); 
                 
+                const rect = balloon.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
                 playPopSound();
+                createPopAnimation(centerX, centerY, randomColor);
                 balloon.remove();
+                
                 score++;
                 scoreDisplay.textContent = `Шары: ${score}`;
                 
@@ -181,8 +305,8 @@
             document.body.appendChild(balloon);
         }
 
-        // Запуск спавна с адаптивной скоростью
-        setInterval(createBalloon, config.spawnSpeed);
+        // Инициализация при старте
+        updateConfig();
     </script>
 </body>
 </html>
