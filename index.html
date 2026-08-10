@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jerry's Game - Тестовая версия</title>
+    <title>Jerry's Game - Стили Рика и Морти</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,7 +14,8 @@
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(to bottom, #74b9ff, #a29bfe);
+            /* Мультяшный фон: зеленая поляна и сочное небо */
+            background: linear-gradient(to bottom, #7cd1f9 0%, #7cd1f9 65%, #7ed667 65%, #5cb847 100%);
             overflow: hidden;
             font-family: 'Arial', sans-serif;
             height: 100vh;
@@ -28,17 +29,18 @@
             z-index: 100;
             background: #2d3436;
             color: #fff;
-            border: none;
-            padding: 10px 15px;
+            border: 3px solid #000; /* Стильная черная обводка кнопки */
+            padding: 8px 12px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            box-shadow: 4px 4px 0px #000;
+            transition: transform 0.1s;
         }
-        #test-toggle:hover {
-            background: #1e2223;
+        #test-toggle:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
         }
 
         #ui {
@@ -48,10 +50,11 @@
             transform: translateX(-50%);
             text-align: center;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             padding: 10px 25px;
             border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 4px solid #000; /* Обводка для интерфейса */
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.15);
             width: 85%;
             max-width: 400px;
         }
@@ -76,50 +79,51 @@
             min-height: 20px;
         }
         
-        /* ШАРИК */
+        /* ШАРИК С ЖИРНОЙ ЧЕРНОЙ ОБВОДКОЙ */
         .balloon {
             position: absolute;
             border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
             bottom: -150px;
             animation: fly linear forwards;
+            border: 4px solid #000000; /* Четкий мультяшный контур */
             -webkit-tap-highlight-color: transparent; 
         }
         
-        /* Блик в стиле мультфильма Рик и Морти (полумесяц слева сверху) */
+        /* Блик полумесяцем слева сверху */
         .balloon::before {
             content: "";
             position: absolute;
-            top: 12%;
-            left: 15%;
+            top: 10%;
+            left: 12%;
             width: 30%;
             height: 30%;
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.7);
             border-radius: 50%;
         }
 
-        /* Дополнительный маленький точечный блик для объема */
+        /* Дополнительный маленький точечный блик */
         .balloon-dot {
             position: absolute;
-            top: 35%;
-            left: 18%;
+            top: 32%;
+            left: 16%;
             width: 10%;
             height: 10%;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.45);
             border-radius: 50%;
         }
         
-        /* Хвостик шарика */
+        /* Хвостик шарика (треугольник на узле) */
         .balloon::after {
             content: "";
             position: absolute;
-            bottom: -6px;
-            left: calc(50% - 4px);
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-bottom: 8px solid rgba(0,0,0,0.2);
+            bottom: -10px;
+            left: calc(50% - 6px);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #000000; /* Черный узелок для стиля */
         }
 
-        /* АНИМАЦИЯ ПОЛЕТА (Замедленная) */
+        /* АНИМАЦИЯ ПОЛЕТА */
         @keyframes fly {
             0% {
                 bottom: -150px;
@@ -134,11 +138,12 @@
             }
         }
 
-        /* ЧАСТИЦЫ ПРИ ЛОПАНИИ */
+        /* ОБЛОМКИ С ОБВОДКОЙ ПРИ ВЗРЫВЕ */
         .pop-particle {
             position: absolute;
             border-radius: 50%;
             pointer-events: none;
+            border: 2px solid #000; /* Обводка для каждого осколка */
             animation: explode 0.4s ease-out forwards;
         }
 
@@ -175,7 +180,8 @@
         let config = {};
         let spawnInterval = null;
 
-        const colors = ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', '#a29bfe', '#fd79a8'];
+        // Яркие цвета, контрастирующие с зеленым и голубым фоном
+        const colors = ['#ff7675', '#f1c40f', '#e67e22', '#e84393', '#9b59b6', '#e74c3c'];
         const jerryQuotes = [
             "Отличный клик!",
             "Ты просто мастер!",
@@ -186,7 +192,6 @@
             "Вау! Еще один!"
         ];
 
-        // Функция обновления конфигурации под текущий режим
         function updateConfig() {
             config = {
                 balloonWidth: isMobile ? 75 : 60,  
@@ -197,17 +202,14 @@
                 inputEvent: isMobile ? 'touchstart' : 'mousedown'
             };
 
-            // Обновляем текст интерфейса
             deviceInfo.textContent = isMobile ? "Режим: Смартфон (Тач)" : "Режим: Компьютер (Мышь)";
             toggleBtn.textContent = isMobile ? "Тест: Смартфон 📱" : "Тест: ПК 💻";
             commentDisplay.textContent = isMobile ? "Тапай по шарам!" : "Кликай по шарам!";
 
-            // Перезапускаем спавнер шаров с новыми таймингами
             clearInterval(spawnInterval);
             spawnInterval = setInterval(createBalloon, config.spawnSpeed);
         }
 
-        // Переключатель режимов для теста
         function toggleDeviceMode() {
             isMobile = !isMobile;
             updateConfig();
@@ -230,7 +232,6 @@
             } catch(e) { console.log("Звук заблокирован"); }
         }
 
-        // Создание эффекта лопания (кусочки разлетаются в стороны)
         function createPopAnimation(x, y, color) {
             const particleCount = 8;
             for (let i = 0; i < particleCount; i++) {
@@ -267,7 +268,18 @@
             dot.classList.add('balloon-dot');
             balloon.appendChild(dot);
             
+            // Внутренний цветной узелок, чтобы перекрыть черную обводку сзади
+            const knot = document.createElement('div');
+            knot.style.position = 'absolute';
+            knot.style.bottom = '-6px';
+            knot.style.left = 'calc(50% - 3px)';
+            knot.style.borderLeft = '3px solid transparent';
+            knot.style.borderRight = '3px solid transparent';
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            knot.style.borderBottom = `6px solid ${randomColor}`;
+            knot.style.zIndex = '2';
+            balloon.appendChild(knot);
+            
             const randomX = Math.random() * (window.innerWidth - config.balloonWidth);
             const randomDuration = Math.random() * (config.maxFlyTime - config.minFlyTime) + config.minFlyTime;
             
@@ -276,7 +288,7 @@
             balloon.style.backgroundColor = randomColor;
             balloon.style.left = `${randomX}px`;
             balloon.style.animationDuration = `${randomDuration}s`;
-            balloon.style.boxShadow = `inset -8px -8px 0px rgba(0,0,0,0.12), 0 5px 12px rgba(0,0,0,0.15)`;
+            balloon.style.boxShadow = `inset -8px -8px 0px rgba(0,0,0,0.12)`;
             
             balloon.addEventListener(config.inputEvent, (e) => {
                 e.preventDefault(); 
@@ -305,7 +317,6 @@
             document.body.appendChild(balloon);
         }
 
-        // Инициализация при старте
         updateConfig();
     </script>
 </body>
